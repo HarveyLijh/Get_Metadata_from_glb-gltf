@@ -1,5 +1,6 @@
 from gltflib import GLTF
 import os
+import trimesh
 
 MESH_NAME = 'pbnik.glb'
 
@@ -43,6 +44,10 @@ if __name__ == '__main__':
     print(MESH_NAME+'\'s file size is :', getFileSize(fileAddr, roundDigit=2))
 
     # get metadata from glb file
+    
+    mesh = trimesh.load(fileAddr, force='mesh')
+    print('# of vertices:', len(mesh.vertices))
+    
     glb = GLTF.load(fileAddr)
     data = glb.model
     images_data = data.images
