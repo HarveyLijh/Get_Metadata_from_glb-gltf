@@ -29,15 +29,11 @@ def getFileSize(filename, roundDigit=2) -> float:
         return str(round(size, roundDigit))+' GB'
     return str(round(size, roundDigit))+' bytes'
 
-
-def exportToGLB(mesh, filename='assets1\\'+MESH_NAME+'-remesh'+'.glb')  -> None:
-    o3d.io.write_triangle_mesh(filename, mesh)
-
 # simplify mesh using Vertex clustering
 # lower the degree value, more the simplification
+# http://www.open3d.org/docs/release/tutorial/geometry/mesh.html#Mesh-simplification
 def simplifyMeshVC(mesh, degree=32) -> o3d.geometry.TriangleMesh:
     voxel_size = max(mesh.get_max_bound() - mesh.get_min_bound()) / degree
-    print(f'voxel_size = {voxel_size:e}')
     mesh_smp = mesh.simplify_vertex_clustering(
         voxel_size=voxel_size,
         contraction=o3d.geometry.SimplificationContraction.Average)
@@ -45,6 +41,7 @@ def simplifyMeshVC(mesh, degree=32) -> o3d.geometry.TriangleMesh:
 
 # simplify mesh using Quadric Decimation
 # lower the num_of_triangle value, more the simplification
+# http://www.open3d.org/docs/release/tutorial/geometry/mesh.html#Mesh-simplification
 def simplifyMeshQD(mesh, num_of_triangles) -> o3d.geometry.TriangleMesh:
     mesh_smp = mesh.simplify_quadric_decimation(
         target_number_of_triangles=num_of_triangles)
@@ -59,24 +56,60 @@ def visualizeMesh(mesh) -> None:
 
 
 if __name__ == '__main__':
+    
+    # check arguments and file existence
     if len(sys.argv) < 2:
-        print('Error: No .glb file specified')
-    MESH_NAME = str(sys.argv[1])
-    fileAddr = 'assets1\\'+MESH_NAME
+        raise Exception('Error: No .glb file specified!')
+    fileAddr = str(sys.argv[1])
+    if len(sys.argv) < 3:
+        raise Exception('Error: No operation specified!')
+    operation = str(sys.argv[2])
+    
+    if os.path.exists(fileAddr) == False:
+        raise Exception('Error: File not found!')
+        
     # get file size in byte, MB, KB, GB
-    print(MESH_NAME+'\'s file size is :', getFileSize(fileAddr, roundDigit=2))
+    print(fileAddr+'\'s file size is :', getFileSize(fileAddr, roundDigit=2))
 
-    # load mesh
-    origMesh = o3d.data.BunnyMesh()
-    # preprocess the mesh
-    mesh = o3d.io.read_triangle_mesh(origMesh.path)
+    # load and preprocess mesh
+    print(f'Loading mesh {fileAddr} ...')
+    mesh = o3d.io.read_triangle_mesh(fileAddr)
+    
+    
+    # origMesh = o3d.data.BunnyMesh()
+    # mesh = o3d.io.read_triangle_mesh(origMesh.path)
+    
+    
     mesh.compute_vertex_normals()
 
-    visualizeMesh(mesh)
-    mesh_smp_VC = simplifyMeshVC(mesh, degree=64)
-    visualizeMesh(mesh_smp_VC)
     
-    num_of_triangles = len(mesh.triangles)
-    degree = 10
-    mesh_smp_QD = simplifyMeshQD(mesh, num_of_triangles=int(num_of_triangles/degree))
-    visualizeMesh(mesh_smp_QD)
+    # handle operations
+    if operation == 'original':
+        o3d.io.write_triangle_mesh('original.glb', mesh)
+        print(f'Visualizing original mesh...')
+        visualizeMesh(mesh)
+        exit(0)
+        
+    if operation == 'VC':
+        if len(sys.argv) < 4:
+            raise Exception('Error: VC operation has no degree specified!')
+        degree = int(sys.argv[3])
+        mesh_smp_VC = simplifyMeshVC(mesh, degree)
+        o3d.io.write_triangle_mesh(f'VC_{degree}.glb', mesh_smp_VC)
+        print(f'Visualizing simplified mesh using simplify_vertex_clustering ...')
+        visualizeMesh(mesh_smp_VC)
+        exit(0)
+    
+    if operation == 'QD':
+        if len(sys.argv) < 4:
+            raise Exception('Error: QD operation has no degree specified!')
+        degree = int(sys.argv[3])
+        num_of_triangles = len(mesh.triangles)
+        mesh_smp_QD = simplifyMeshQD(mesh, num_of_triangles=int(num_of_triangles/degree))
+        o3d.io.write_triangle_mesh(f'QD_{degree}.glb', mesh_smp_QD)
+        print(f'Visualizing simplified mesh using simplify_quadric_decimation ...')
+        visualizeMesh(mesh_smp_QD)
+        exit(0)
+        
+    
+    raise Exception('Error: Operation not found')
