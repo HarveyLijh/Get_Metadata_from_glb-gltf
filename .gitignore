@@ -1,1 +1,4 @@
-*.glb
+
+.DS_Store
+VC_10.glb
+original.glb
