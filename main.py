@@ -36,9 +36,15 @@ def getFileSize(filename, roundDigit=2) -> float:
 
 def simplifyMeshVC(mesh, degree=32) -> o3d.geometry.TriangleMesh:
     voxel_size = max(mesh.get_max_bound() - mesh.get_min_bound()) / degree
+    
     mesh_smp = mesh.simplify_vertex_clustering(
         voxel_size=voxel_size,
         contraction=o3d.geometry.SimplificationContraction.Average)
+    
+    mesh_smp.textures = mesh.textures
+    mesh_smp.triangle_uvs = mesh.triangle_uvs
+    print("mesh: ",mesh.triangles)
+    print("mesh_smp: ",mesh_smp.triangles)
     return mesh_smp
 
 # simplify mesh using Quadric Decimation
@@ -60,6 +66,7 @@ def visualizeMesh(mesh) -> None:
         o3d.visualization.draw_geometries([mesh])
     else:
         o3d.visualization.draw([mesh])
+        # print(mesh.textures)
 
 
 if __name__ == '__main__':
